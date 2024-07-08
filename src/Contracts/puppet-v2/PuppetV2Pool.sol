@@ -45,6 +45,8 @@ contract PuppetV2Pool {
             revert NotEnoughTokenBalance();
         }
 
+
+//@audit
         // Calculate how much WETH the user must deposit
         uint256 depositOfWETHRequired = calculateDepositOfWETHRequired(borrowAmount);
 
@@ -60,6 +62,7 @@ contract PuppetV2Pool {
     }
 
     function calculateDepositOfWETHRequired(uint256 tokenAmount) public view returns (uint256) {
+      //@audit 
         return (_getOracleQuote(tokenAmount) * 3) / 10 ** 18;
     }
 
@@ -67,6 +70,7 @@ contract PuppetV2Pool {
     function _getOracleQuote(uint256 amount) private view returns (uint256) {
         (uint256 reservesWETH, uint256 reservesToken) =
             UniswapV2Library.getReserves(_uniswapFactory, address(_weth), address(_token));
+       //@audit 
         return UniswapV2Library.quote(amount * (10 ** 18), reservesToken, reservesWETH);
     }
 }

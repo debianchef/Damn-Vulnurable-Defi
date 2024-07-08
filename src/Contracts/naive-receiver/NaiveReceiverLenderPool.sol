@@ -26,6 +26,8 @@ contract NaiveReceiverLenderPool is ReentrancyGuard {
         if (balanceBefore < borrowAmount) revert NotEnoughETHInPool();
         if (!borrower.isContract()) revert BorrowerMustBeADeployedContract();
 
+
+///@audit
         // Transfer ETH and handle control to receiver
         borrower.functionCallWithValue(abi.encodeWithSignature("receiveEther(uint256)", FIXED_FEE), borrowAmount);
 

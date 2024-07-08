@@ -53,6 +53,7 @@ contract SimpleGovernance {
         GovernanceAction storage actionToQueue = actions[actionId];
         actionToQueue.receiver = receiver;
         actionToQueue.weiAmount = weiAmount;
+    //@audit 
         actionToQueue.data = data;
         actionToQueue.proposedAt = block.timestamp;
 
@@ -67,7 +68,7 @@ contract SimpleGovernance {
 
         GovernanceAction storage actionToExecute = actions[actionId];
         actionToExecute.executedAt = block.timestamp;
-
+//@audit 
         actionToExecute.receiver.functionCallWithValue(actionToExecute.data, actionToExecute.weiAmount);
 
         emit ActionExecuted(actionId, msg.sender);

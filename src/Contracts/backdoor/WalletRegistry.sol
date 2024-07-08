@@ -73,11 +73,14 @@ contract WalletRegistry is IProxyCreationCallback, Ownable {
         external
         override
     {
+
+        //@audit
         // Make sure we have enough DVT to pay
         if (token.balanceOf(address(this)) < TOKEN_PAYMENT) {
             revert NotEnoughFundsToPay();
         }
 
+//@audit 
         address payable walletAddress = payable(proxy);
 
         // Ensure correct factory and master copy
@@ -111,6 +114,7 @@ contract WalletRegistry is IProxyCreationCallback, Ownable {
         // Register the wallet under the owner's address
         wallets[walletOwner] = walletAddress;
 
+//@audit 
         // Pay tokens to the newly created wallet
         token.transfer(walletAddress, TOKEN_PAYMENT);
     }

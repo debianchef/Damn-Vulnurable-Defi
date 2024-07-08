@@ -8,3 +8,7 @@ src = "contracts"
 out = "artifacts"
 libs = ["node_modules"]
 fs_permissions = [{ access = "read", path = "./" }]
+
+
+[fuzz]
+runs =20000

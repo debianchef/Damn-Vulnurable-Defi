@@ -26,11 +26,14 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
         token = new DamnValuableNFT();
 
         for (uint8 i = 0; i < amountToMint; i++) {
+            //@audit unchecked returned value 
             token.safeMint(msg.sender);
+            
         }
     }
 
     function offerMany(uint256[] calldata tokenIds, uint256[] calldata prices) external nonReentrant {
+        //@audit 
         require(tokenIds.length > 0 && tokenIds.length == prices.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _offerOne(tokenIds[i], prices[i]);
@@ -71,6 +74,7 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
         // transfer from seller to buyer
         token.safeTransferFrom(token.ownerOf(tokenId), msg.sender, tokenId);
 
+//@audit 
         // pay seller
         payable(token.ownerOf(tokenId)).sendValue(priceToPay);
 

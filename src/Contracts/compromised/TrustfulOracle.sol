@@ -97,6 +97,8 @@ contract TrustfulOracle is AccessControlEnumerable {
     }
 
     function _computeMedianPrice(string memory symbol) private view returns (uint256) {
+      
+       //@audit
         uint256[] memory prices = _sort(getAllPricesForSymbol(symbol));
 
         // calculate median price

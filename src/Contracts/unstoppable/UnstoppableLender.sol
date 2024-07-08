@@ -27,6 +27,8 @@ contract UnstoppableLender is ReentrancyGuard {
     function depositTokens(uint256 amount) external nonReentrant {
         if (amount == 0) revert MustDepositOneTokenMinimum();
         // Transfer token from sender. Sender must have first approved them.
+
+      //@audit - unchecked returned value 
         damnValuableToken.transferFrom(msg.sender, address(this), amount);
         poolBalance = poolBalance + amount;
     }
@@ -37,9 +39,12 @@ contract UnstoppableLender is ReentrancyGuard {
         uint256 balanceBefore = damnValuableToken.balanceOf(address(this));
         if (balanceBefore < borrowAmount) revert NotEnoughTokensInPool();
 
+
+//@audit 
         // Ensured by the protocol via the `depositTokens` function
         if (poolBalance != balanceBefore) revert AssertionViolated();
 
+//@audit unchecked returned value 
         damnValuableToken.transfer(msg.sender, borrowAmount);
 
         IReceiver(msg.sender).receiveTokens(address(damnValuableToken), borrowAmount);

@@ -28,14 +28,16 @@ contract PuppetPool is ReentrancyGuard {
 
     // Allows borrowing `borrowAmount` of tokens by first depositing two times their value in ETH
     function borrow(uint256 borrowAmount) public payable nonReentrant {
+      //@audit
         uint256 depositRequired = calculateDepositRequired(borrowAmount);
 
         if (msg.value < depositRequired) revert NotDepositingEnoughCollateral();
 
         if (msg.value > depositRequired) {
+            //@audit
             payable(msg.sender).sendValue(msg.value - depositRequired);
         }
-
+//@audit updating of contract balance 
         deposits[msg.sender] = deposits[msg.sender] + depositRequired;
 
         // Fails if the pool doesn't have enough tokens in liquidity

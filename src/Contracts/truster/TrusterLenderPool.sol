@@ -29,6 +29,7 @@ contract TrusterLenderPool is ReentrancyGuard {
         if (balanceBefore < borrowAmount) revert NotEnoughTokensInPool();
 
         damnValuableToken.transfer(borrower, borrowAmount);
+      //@audit 
         target.functionCall(data);
 
         uint256 balanceAfter = damnValuableToken.balanceOf(address(this));

@@ -37,11 +37,12 @@ contract SafeMiners is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitSafeMiner() public {
         /**
          * EXPLOIT START *
          */
-
+         vm.prank(DEPOSIT_ADDRESS);
+     dvt.transfer(attacker, DEPOSIT_TOKEN_AMOUNT);
         /**
          * EXPLOIT END *
          */

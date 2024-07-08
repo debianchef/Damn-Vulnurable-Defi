@@ -56,11 +56,14 @@ contract Exchange is ReentrancyGuard {
 
         // Price should be in [wei / NFT]
         uint256 currentPriceInWei = oracle.getMedianPrice(token.symbol());
+       
+        //@audit
         if (address(this).balance < currentPriceInWei) {
             revert NotEnoughETHInBalance();
         }
 
         token.transferFrom(msg.sender, address(this), tokenId);
+    
         token.burn(tokenId);
 
         payable(msg.sender).sendValue(currentPriceInWei);

